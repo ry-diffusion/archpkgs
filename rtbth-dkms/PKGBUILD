@@ -1,0 +1,35 @@
+_pkgbase=rtbth
+pkgname=rtbth-dkms
+pkgver=4.1.1
+pkgrel=1
+pkgdesc="Linux kernel module for a Ralink RT3290 wireless device. It enables Bluez software and driver support for RT3290."
+license=('GPL2')
+arch=('x86_64')
+url="https://github.com/ry-diffusion/rtbth-ralink-3290-linux-dkms"
+depends=('dkms')
+source=("${_pkgbase}-${pkgver}::git+${url}#tag=${pkgver}" "dkms.conf")
+
+sha256sums=('81d44a5f9e4cadd48b159d717bfc2f981811228f47caea665964dbb13d1b1ccb'
+	'04dc09af1e0b1042211bab9d50771c95a23f9705681902a95d3676e12853c0c9')
+
+prepare() {
+	cd ${_pkgbase}-${pkgver}
+}
+
+package() {
+	mkdir -p $pkgdir/opt/ralink
+	mkdir -p $pkgdir/usr/local/lib/systemd/system
+	mkdir -p $pkgdir/usr/lib/systemd/system
+	mkdir -p $pkgdir/usr/src/${_pkgbase}-${pkgver}
+
+	make -C "${_pkgbase}-${pkgver}" DESTDIR=$pkgdir install
+
+	mv $pkgdir/usr/local/lib/systemd/system/rtbth.service $pkgdir/usr/lib/systemd/system
+
+	cp -r ${_pkgbase}-${pkgver}/* "${pkgdir}"/usr/src/${_pkgbase}-${pkgver}/
+
+	install -Dm644 dkms.conf "${pkgdir}"/usr/src/${_pkgbase}-${pkgver}/dkms.conf
+	sed -e "s/@_PKGBASE@/${_pkgbase}/" \
+		-e "s/@PKGVER@/${pkgver}/" \
+		-i "${pkgdir}"/usr/src/${_pkgbase}-${pkgver}/dkms.conf
+}
